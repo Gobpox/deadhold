@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>ZOMBIE FORTRESS: LAST STAND</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0e13; }
+  body { font-family: system-ui, 'Segoe UI', sans-serif; color: #e8e4da; -webkit-user-select: none; user-select: none; }
+  #game { position: fixed; inset: 0; display: block; touch-action: none; }
+  .hidden { display: none !important; }
+
+  /* ------------------------------------------------------------ HUD -- */
+  #hud { position: fixed; inset: 0; pointer-events: none; z-index: 5; }
+  #hud .card { background: rgba(10, 13, 18, 0.78); border: 1px solid rgba(255, 215, 94, 0.25); border-radius: 10px; backdrop-filter: blur(2px); }
+  #pstat { position: absolute; top: 10px; left: 10px; display: flex; gap: 9px; padding: 8px 11px; align-items: center; }
+  #portrait { font-size: 30px; background: #232a33; border: 2px solid #ffd75e; border-radius: 8px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
+  #pstat .bars { width: 168px; }
+  .bar { height: 11px; background: rgba(255,255,255,0.12); border-radius: 5px; overflow: hidden; margin: 2.5px 0; position: relative; }
+  .bar > div { height: 100%; transition: width 0.15s; }
+  .bar span { position: absolute; inset: 0; font-size: 8.5px; line-height: 11px; text-align: center; color: #fff; text-shadow: 0 1px 2px #000; letter-spacing: 0.4px; }
+  #hpbar > div { background: linear-gradient(90deg, #d33f2e, #ff7d5e); }
+  #stbar { height: 7px; } #stbar > div { background: #ffd75e; }
+  #xpbar { height: 7px; } #xpbar > div { background: #7dffce; }
+  #plabel { font-size: 12.5px; font-weight: 700; }
+  #plabel small { color: #ffd75e; }
+
+  #wavebox { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); text-align: center; padding: 7px 18px; pointer-events: auto; cursor: pointer; }
+  #wave { font-size: 19px; font-weight: 800; letter-spacing: 1.5px; color: #ffd75e; }
+  #wavemeta { font-size: 11.5px; color: #b8c4cc; }
+  #fortbars { width: 240px; margin: 4px auto 0; }
+  #fortbars .bar { height: 8px; }
+  #fortbars .bar span { line-height: 8px; font-size: 7.5px; }
+  #gatebar > div { background: #c9a86a; } #corebar > div { background: #b07ba0; }
+  #bossbox { margin-top: 5px; width: 300px; }
+  #bossbox .bar { height: 13px; border: 1px solid rgba(255,93,71,0.6); }
+  #bossbox .bar > div { background: linear-gradient(90deg, #8f1f14, #ff5d47); }
+  #bossname { font-size: 12px; font-weight: 800; color: #ff8a7d; letter-spacing: 1px; }
+
+  #mapbox { position: absolute; top: 10px; right: 10px; padding: 6px; text-align: center; }
+  #minimap { display: block; border-radius: 6px; }
+  #resline { font-size: 12.5px; margin-top: 4px; color: #ffd75e; font-weight: 700; }
+  #hudbtns { position: absolute; top: 196px; right: 10px; display: flex; gap: 6px; pointer-events: auto; }
+  .hbtn { background: rgba(10,13,18,0.8); border: 1px solid rgba(255,215,94,0.35); color: #e8e4da; border-radius: 8px; padding: 6px 10px; font-size: 14px; cursor: pointer; }
+  .hbtn:hover { background: rgba(50,44,30,0.9); }
+
+  #petbox { position: absolute; left: 10px; top: 118px; display: flex; flex-direction: column; gap: 5px; max-width: 190px; }
+  .petchip { padding: 5px 8px; font-size: 11px; }
+  .petchip .bar { height: 6px; } .petchip .bar > div { background: #c792ff; }
+  .petchip .skills { color: #7dffce; font-size: 10px; }
+  #towerchip { padding: 5px 8px; font-size: 11px; color: #9fe8ff; }
+
+  #notes { position: absolute; right: 10px; top: 240px; width: 250px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+  .note { background: rgba(10,13,18,0.82); border-left: 3px solid #ffd75e; border-radius: 6px; padding: 5px 9px; font-size: 12px; animation: slidein 0.2s; }
+  @keyframes slidein { from { transform: translateX(16px); opacity: 0; } }
+
+  #slots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 5px; pointer-events: auto; }
+  .slot { width: 62px; padding: 5px 4px 4px; text-align: center; cursor: pointer; border-radius: 9px; background: rgba(10,13,18,0.78); border: 1px solid rgba(255,255,255,0.16); }
+  .slot.cur { border-color: #ffd75e; background: rgba(60,50,20,0.85); }
+  .slot.locked { opacity: 0.38; }
+  .slot .ic { font-size: 17px; }
+  .slot .nm { font-size: 8px; color: #b8c4cc; letter-spacing: 0.3px; white-space: nowrap; overflow: hidden; }
+  .slot .am { font-size: 11px; font-weight: 700; color: #ffd75e; }
+  .slot .am small { color: #b8c4cc; font-weight: 400; }
+  #items { position: absolute; bottom: 86px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; pointer-events: auto; }
+  .item { padding: 5px 11px; font-size: 12.5px; cursor: pointer; border-radius: 8px; background: rgba(10,13,18,0.8); border: 1px solid rgba(255,255,255,0.2); color: #e8e4da; }
+  .item:hover { border-color: #7dffce; }
+  #hints { position: absolute; bottom: 10px; left: 10px; font-size: 11px; color: rgba(232,228,218,0.55); line-height: 1.55; text-shadow: 0 1px 2px #000; }
+
+  /* ---------------------------------------------------------- touch -- */
+  #touch { position: fixed; inset: 0; z-index: 6; pointer-events: none; display: none; }
+  #touch.on { display: block; }
+  .stick { position: absolute; bottom: 96px; width: 118px; height: 118px; border-radius: 50%; background: rgba(255,255,255,0.07); border: 1.5px solid rgba(255,255,255,0.25); pointer-events: auto; }
+  #stick-move { left: 18px; } #stick-aim { right: 18px; }
+  .knob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: rgba(255,255,255,0.22); border: 1.5px solid rgba(255,255,255,0.4); }
+  .tbtn { position: absolute; width: 54px; height: 54px; border-radius: 50%; background: rgba(10,13,18,0.7); border: 1.5px solid rgba(255,215,94,0.4); color: #fff; font-size: 19px; pointer-events: auto; }
+  #btn-dash { right: 148px; bottom: 104px; } #btn-grenade { right: 148px; bottom: 168px; }
+  #btn-reload { right: 84px; bottom: 216px; } #btn-interact { right: 18px; bottom: 226px; }
+  #btn-heal { right: 216px; bottom: 150px; } #btn-target { right: 216px; bottom: 88px; font-size: 14px; }
+
+  /* --------------------------------------------------------- panels -- */
+  #panel-root { position: fixed; inset: 0; z-index: 20; display: none; align-items: center; justify-content: center; background: rgba(4,6,9,0.62); }
+  #panel-root.on { display: flex; }
+  .panel { width: min(680px, 94vw); max-height: 88vh; overflow-y: auto; background: linear-gradient(180deg, #171d26, #10141b); border: 1.5px solid rgba(255,215,94,0.45); border-radius: 14px; padding: 16px 18px; box-shadow: 0 18px 60px rgba(0,0,0,0.7); }
+  .panel-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .panel-head h2 { font-size: 19px; letter-spacing: 1px; color: #ffd75e; }
+  .panel .x { background: none; border: none; color: #e8e4da; font-size: 19px; cursor: pointer; }
+  .resbar { display: flex; flex-wrap: wrap; gap: 5px 13px; font-size: 12px; background: rgba(255,255,255,0.05); border-radius: 8px; padding: 6px 10px; margin-bottom: 10px; color: #ffd75e; }
+  .panel-body h3 { margin: 13px 0 6px; font-size: 14.5px; color: #9fe8ff; letter-spacing: 0.6px; }
+  .panel-body p { font-size: 13px; margin: 5px 0; }
+  .dim { color: #98a4ae; } .bad { color: #ff8a7d; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 7px; }
+  .pbtn { background: #232b36; border: 1px solid rgba(255,215,94,0.35); color: #e8e4da; border-radius: 9px; padding: 8px 9px; font-size: 12.5px; cursor: pointer; text-align: center; line-height: 1.45; }
+  .pbtn:hover:not(:disabled) { background: #2e3947; border-color: #ffd75e; }
+  .pbtn:disabled { opacity: 0.42; cursor: not-allowed; }
+  .pbtn .cost.ok { color: #7dffce; font-size: 11px; } .pbtn .cost.bad { color: #ff8a7d; font-size: 11px; }
+  .facrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: rgba(255,255,255,0.04); border-radius: 9px; padding: 8px 11px; margin: 6px 0; font-size: 13px; }
+  .facrow .pbtn { flex-shrink: 0; }
+  .wep { background: rgba(255,255,255,0.04); border-radius: 10px; padding: 6px 10px 10px; margin: 8px 0; border: 1px solid transparent; }
+  .wep.equipped { border-color: rgba(255,215,94,0.5); }
+  .wep .facrow { background: none; padding: 4px 0; margin: 0; }
+  .upgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px; margin-top: 6px; }
+  .upcell { background: rgba(0,0,0,0.25); border-radius: 8px; padding: 6px 8px; font-size: 11.5px; }
+  .upcell .pbtn { padding: 2px 10px; margin-left: 6px; }
+  .invgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 6px; margin: 8px 0; }
+  .inv { background: rgba(255,255,255,0.05); border-radius: 8px; padding: 7px 10px; font-size: 12.5px; display: flex; justify-content: space-between; }
+
+  /* ----------------------------------------------------- overlays ---- */
+  .overlay { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(5,7,11,0.55); text-align: center; padding: 18px; }
+  #menu { background: linear-gradient(180deg, rgba(5,7,11,0.25), rgba(5,7,11,0.78)); justify-content: flex-end; padding-bottom: 5vh; }
+  #menu h1 { font-size: clamp(34px, 7.5vw, 64px); font-weight: 900; letter-spacing: 2.5px; color: #f2e9d8; text-shadow: 0 4px 0 #7a2d20, 0 10px 34px rgba(0,0,0,0.9); line-height: 1.02; }
+  #menu h1 .red { color: #ff5d47; }
+  #menu .sub { color: #ffd75e; letter-spacing: 3.5px; font-size: clamp(11px, 2vw, 15px); margin: 7px 0 20px; text-shadow: 0 2px 8px #000; }
+  .mbtn { pointer-events: auto; display: block; width: min(330px, 84vw); margin: 4.5px auto; padding: 11px; font-size: 16.5px; font-weight: 800; letter-spacing: 1.6px; color: #14100c; background: linear-gradient(180deg, #ffd75e, #d9a83e); border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 5px 18px rgba(0,0,0,0.55); }
+  .mbtn:hover { filter: brightness(1.1); }
+  .mbtn.ghost { background: rgba(16,20,27,0.88); color: #e8e4da; border: 1px solid rgba(255,215,94,0.5); font-size: 13.5px; padding: 8.5px; }
+  #menu .best { margin-top: 13px; font-size: 12.5px; color: #b8c4cc; text-shadow: 0 1px 3px #000; }
+
+  #choices { z-index: 25; background: rgba(4,6,9,0.6); }
+  #choices h2 { color: #7dffce; letter-spacing: 2px; margin-bottom: 16px; font-size: 24px; text-shadow: 0 3px 12px #000; }
+  #choice-row { display: flex; gap: 13px; flex-wrap: wrap; justify-content: center; }
+  .choice { width: 190px; padding: 17px 13px; background: linear-gradient(180deg, #1b232f, #12161d); border: 1.5px solid rgba(125,255,206,0.5); border-radius: 13px; cursor: pointer; color: #e8e4da; }
+  .choice:hover { transform: translateY(-3px); border-color: #7dffce; }
+  .choice .ic { font-size: 32px; } .choice .nm { font-weight: 800; margin: 7px 0 4px; font-size: 14.5px; } .choice .ds { font-size: 12px; color: #98a4ae; }
+
+  #over h1, #pause h1 { font-size: clamp(30px, 6vw, 50px); letter-spacing: 2.5px; color: #ff8a7d; text-shadow: 0 6px 26px rgba(0,0,0,0.9); }
+  #over .cause { color: #e8e4da; margin: 8px 0 16px; font-size: 15.5px; }
+  .statgrid { display: grid; grid-template-columns: repeat(3, minmax(105px, 1fr)); gap: 8px; margin-bottom: 20px; }
+  .statgrid .st { background: rgba(10,13,18,0.85); border: 1px solid rgba(255,215,94,0.3); border-radius: 10px; padding: 10px; }
+  .statgrid .st b { display: block; font-size: 21px; color: #ffd75e; }
+  .statgrid .st span { font-size: 10.5px; color: #98a4ae; letter-spacing: 0.6px; }
+  .sheet { background: rgba(10,13,18,0.92); border: 1px solid rgba(255,215,94,0.4); border-radius: 14px; padding: 22px 26px; max-width: 560px; text-align: left; font-size: 13.5px; line-height: 1.65; max-height: 74vh; overflow-y: auto; }
+  .sheet h2 { color: #ffd75e; letter-spacing: 1.5px; margin-bottom: 9px; text-align: center; }
+  .sheet b { color: #9fe8ff; }
+  .sheet label { display: flex; justify-content: space-between; align-items: center; margin: 9px 0; gap: 14px; }
+  .sheet input[type=range] { width: 170px; accent-color: #ffd75e; }
+</style>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div id="hud" class="hidden">
+  <div id="pstat" class="card">
+    <div id="portrait">🪖</div>
+    <div>
+      <div id="plabel">SOLDIER <small id="plvl">Lv. 1</small></div>
+      <div class="bars">
+        <div class="bar" id="hpbar"><div></div><span></span></div>
+        <div class="bar" id="stbar"><div></div></div>
+        <div class="bar" id="xpbar"><div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="wavebox" class="card" title="Click to start the next wave now">
+    <div id="wave">WAVE 1</div>
+    <div id="wavemeta">Kills 0 · 0:00</div>
+    <div id="fortbars">
+      <div class="bar" id="gatebar"><div></div><span>🚪 GATE</span></div>
+      <div class="bar" id="corebar"><div></div><span>🏰 THE KEEP</span></div>
+    </div>
+    <div id="bossbox" class="hidden">
+      <div id="bossname">☠ BOSS</div>
+      <div class="bar"><div id="bossfill"></div></div>
+    </div>
+  </div>
+
+  <div id="mapbox" class="card">
+    <canvas id="minimap" width="168" height="132"></canvas>
+    <div id="resline">🪙 0 · ✦ 0</div>
+  </div>
+  <div id="hudbtns">
+    <button class="hbtn" id="btn-missions" title="Missions">📜</button>
+    <button class="hbtn" id="btn-pause" title="Pause">⏸</button>
+  </div>
+
+  <div id="petbox"></div>
+  <div id="notes"></div>
+
+  <div id="items">
+    <button class="item" id="it-medkit">🧰 Medkit (H) · 0</button>
+    <button class="item" id="it-grenade">💣 Grenade (G) · 0</button>
+    <button class="item" id="it-target">🎯 Tower Target (T)</button>
+  </div>
+  <div id="slots"></div>
+  <div id="hints">WASD move · mouse aim · click fire · <b>R</b> reload · <b>Space</b> dash<br><b>Shift</b> sprint · <b>E</b> building · <b>1–9</b> weapons · <b>T</b> tower target</div>
+</div>
+
+<div id="touch">
+  <div class="stick" id="stick-move"><div class="knob"></div></div>
+  <div class="stick" id="stick-aim"><div class="knob"></div></div>
+  <button class="tbtn" id="btn-dash">💨</button>
+  <button class="tbtn" id="btn-grenade">💣</button>
+  <button class="tbtn" id="btn-reload">🔄</button>
+  <button class="tbtn" id="btn-interact">✋</button>
+  <button class="tbtn" id="btn-heal">🧰</button>
+  <button class="tbtn" id="btn-target">🎯</button>
+</div>
+
+<div id="panel-root"></div>
+
+<div id="choices" class="overlay hidden">
+  <h2>⬆ LEVEL UP — CHOOSE ONE</h2>
+  <div id="choice-row"></div>
+</div>
+
+<div id="menu" class="overlay">
+  <h1>ZOMBIE FORTRESS<br><span class="red">LAST STAND</span></h1>
+  <div class="sub">SURVIVAL · FORTRESS DEFENSE · MECHANIC PETS</div>
+  <button class="mbtn" id="m-play">▶ PLAY</button>
+  <button class="mbtn ghost hidden" id="m-continue">CONTINUE</button>
+  <button class="mbtn ghost" data-manage="fortress">🏰 FORTRESS UPGRADES</button>
+  <button class="mbtn ghost" data-manage="armory">🔫 ARMORY</button>
+  <button class="mbtn ghost" data-manage="pets">🤖 PET MECHANIC</button>
+  <button class="mbtn ghost" data-manage="workshop">🔧 WORKSHOP</button>
+  <button class="mbtn ghost" id="m-settings">⚙ SETTINGS</button>
+  <button class="mbtn ghost" id="m-how">❔ HOW TO PLAY</button>
+  <div class="best" id="menu-best"></div>
+</div>
+
+<div id="howto" class="overlay hidden">
+  <div class="sheet">
+    <h2>HOW TO PLAY</h2>
+    <p><b>Survive the endless night.</b> Zombies pour at the fortress gate. Kill them, pick up what they drop <b>by walking over it</b>, and spend it on weapons, facilities and Mechanic Pets. You fall — or the Keep falls — and the run ends. Everything you build is <b>permanent</b>.</p>
+    <p><b>Controls:</b> WASD move · mouse aim · click/hold fire · R reload · Space dash · Shift sprint · E use a building · 1–9 switch weapon · G grenade · H medkit · T tower Target Attack (then click a zombie; usable once every two waves) · Esc pause. On touch screens: twin sticks + buttons.</p>
+    <p><b>The fortress:</b> the <b>Workshop</b> builds pets and produces ammo, grenades and mines. The <b>Medical Station</b> heals and crafts medkits. The <b>Warehouse</b> caps how much you can store. The <b>Keep</b> opens Fortress Upgrades — six permanent facility lines. Guard towers auto-fire at random targets; walk to one to upgrade it. Build pads take turrets, MG nests, flame traps and spike strips.</p>
+    <p><b>Mechanic Pets:</b> build up to as many as you like — <b>2 active at once</b>. A pet deals <b>20% of your damage</b> and each hit can proc a buff or debuff (10%). Each pet carries at most <b>2 skills</b>, installed and combined at the Workshop with <b>Pet Skill Stones</b> (dropped by elites and bosses): <b>Auto Pickup</b> fetches drops for you, <b>HP Regeneration</b> heals you every second and stacks, <b>One Hit Kill</b> rolls 10% on normal zombies, 1% on elites and 0.01% on a boss below 75% HP.</p>
+    <p><b>The horde:</b> Walkers and Runners first, then Crawlers (they slip through wall gaps), Tanks that smash structures, Exploders, Screamers that call more, Armored with a weak back, and Mutants. Every 10th wave a <b>boss</b> comes — Brute, Butcher, Abomination, Commander, Colossus — each with telegraphed special attacks. Watch the red rings and lines: move.</p>
+    <button class="mbtn" id="how-close" style="margin-top:14px">GOT IT</button>
+  </div>
+</div>
+
+<div id="settings" class="overlay hidden">
+  <div class="sheet">
+    <h2>SETTINGS</h2>
+    <label>Music volume <input type="range" id="set-music" min="0" max="1" step="0.05"></label>
+    <label>Sound volume <input type="range" id="set-sfx" min="0" max="1" step="0.05"></label>
+    <label>Screen shake <input type="checkbox" id="set-shake"></label>
+    <button class="mbtn ghost" id="set-wipe" style="margin-top:10px">🗑 RESET ALL PROGRESS</button>
+    <button class="mbtn" id="set-close" style="margin-top:10px">DONE</button>
+  </div>
+</div>
+
+<div id="pause" class="overlay hidden">
+  <h1>⏸ PAUSED</h1>
+  <button class="mbtn" id="p-resume">RESUME</button>
+  <button class="mbtn ghost" id="p-restart">RESTART RUN</button>
+  <button class="mbtn ghost" id="p-menu">MAIN MENU</button>
+</div>
+
+<div id="over" class="overlay hidden">
+  <h1>☠ THE FORTRESS HAS FALLEN</h1>
+  <div class="cause" id="over-cause"></div>
+  <div class="statgrid" id="over-stats"></div>
+  <button class="mbtn" id="o-again">↻ PLAY AGAIN</button>
+  <button class="mbtn ghost" id="o-menu">MAIN MENU</button>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>
